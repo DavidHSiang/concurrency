@@ -1,29 +1,30 @@
 // metrics data structure
 // 基本功能：increment, decrement, snapshot, clear
 
+use core::fmt;
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
 
 use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct Metrics {
-    data: Arc<Mutex<HashMap<String, i64>>>,
+    data: Arc<RwLock<HashMap<String, i64>>>,
 }
 
 impl Metrics {
     pub fn new() -> Self {
         Metrics {
-            data: Arc::new(Mutex::new(HashMap::new())),
+            data: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
     pub fn increment(&self, key: impl Into<String>) -> Result<()> {
         let mut binding = self
             .data
-            .lock()
+            .write()
             .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         let count = binding.entry(key.into()).or_insert(0);
         *count += 1;
@@ -33,7 +34,7 @@ impl Metrics {
     pub fn decrement(&self, key: impl Into<String>) -> Result<()> {
         let mut binding = self
             .data
-            .lock()
+            .write()
             .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         let count = binding.entry(key.into()).or_insert(0);
         *count -= 1;
@@ -42,16 +43,23 @@ impl Metrics {
 
     pub fn snapshot(&self) -> Result<HashMap<String, i64>> {
         self.data
-            .lock()
+            .read()
             .map(|data| data.clone())
             .map_err(|e| anyhow::anyhow!(e.to_string()))
     }
 
     pub fn clear(&mut self) -> Result<()> {
         self.data
-            .lock()
+            .write()
             .map(|mut data| data.clear())
             .map_err(|e| anyhow::anyhow!(e.to_string()))
+    }
+}
+
+impl fmt::Display for Metrics {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let data = self.data.read().map_err(|_| fmt::Error {})?;
+        write!(f, "{:?}", data)
     }
 }
 

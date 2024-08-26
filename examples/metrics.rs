@@ -22,7 +22,8 @@ fn main() -> Result<()> {
     // print metrics every 5 seconds
     loop {
         thread::sleep(Duration::from_secs(5));
-        println!("{:?}", metrics.snapshot()?);
+        // println!("{:?}", metrics.snapshot()?);
+        println!("{}", metrics);
     }
 }
 
